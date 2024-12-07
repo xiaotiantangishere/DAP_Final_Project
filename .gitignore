@@ -19,13 +19,13 @@ writeup/writeup_files/libs/quarto-html/quarto.js
 writeup/writeup_files/libs/quarto-html/tippy.css
 writeup/writeup_files/libs/quarto-html/tippy.umd.min.js
 writeup/writeup_model.qmd
-writeup/writeup.html
+
 
 writeup/writeup_files/libs/quarto-html/quarto-syntax-highlighting-2486e1f0a3ee9ee1fc393803a1361cdb.css
 writeup/writeup_files/libs/quarto-html/quarto.js
 writeup/writeup_files/libs/quarto-html/tippy.css
 writeup/writeup_files/libs/quarto-html/tippy.umd.min.js
-writeup/writeup.html
+
 
 .DS_Store
 shiny/__pycache__/app.cpython-39.pyc
