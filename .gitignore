@@ -1,0 +1,15 @@
+
+.DS_Store
+writeup/writeup_files/libs/bootstrap/bootstrap-icons.css
+writeup/writeup_files/libs/bootstrap/bootstrap-icons.woff
+writeup/writeup_files/libs/bootstrap/bootstrap.min.css
+writeup/writeup_files/libs/bootstrap/bootstrap.min.js
+writeup/writeup_files/libs/clipboard/clipboard.min.js
+writeup/writeup_files/libs/quarto-html/anchor.min.js
+writeup/writeup_files/libs/quarto-html/popper.min.js
+writeup/writeup_files/libs/quarto-html/quarto-syntax-highlighting.css
+writeup/writeup_files/libs/quarto-html/quarto.js
+writeup/writeup_files/libs/quarto-html/tippy.css
+writeup/writeup_files/libs/quarto-html/tippy.umd.min.js
+writeup/writeup_model.qmd
+writeup/writeup.html

@@ -1,0 +1,130 @@
+---
+title: "Final Project"
+author: "KJ WU, Carey Cui, XiaoTian Tang"
+date: today
+date-format: long
+format: 
+    html:
+        echo: false      
+        code: false      
+        toc: true        
+        output: true     
+engine: jupyter
+---
+
+
+```{python}
+%reset -f
+import pandas as pd
+import altair as alt
+import statsmodels.api as sm
+alt.renderers.enable('html')
+import os
+
+
+#import data
+os.chdir('/Users/zhengcui/Desktop/python 2/Age')
+age_df = pd.read_csv("Data/CPS_Demographic_Turnout_Rates_v1.0.csv")
+
+age_group = age_df[['YEAR', 'CPS_ADJ_AGE1829_RATE', 'CPS_ADJ_AGE3044_RATE', 'CPS_ADJ_AGE4559_RATE', 'CPS_ADJ_AGE60_RATE']].copy()
+age_group_names = {
+    'CPS_ADJ_AGE1829_RATE': 'Age 18-29',
+    'CPS_ADJ_AGE3044_RATE': 'Age 30-44',
+    'CPS_ADJ_AGE4559_RATE': 'Age 45-59',
+    'CPS_ADJ_AGE60_RATE': 'Age 60+'
+}
+age_group.rename(columns=age_group_names, inplace=True)
+
+#only focus on presidential election
+presidential_group = age_group[age_group['YEAR'] >= 1988]
+presidential_group = age_group[age_group['YEAR'] % 4 == 0]
+
+```
+
+The second factor we are interested in is age. We want to analyze how age affects turnout rates. To start, we observe that the data is distributed over the year, with each year having a different turnout rate for various age groups. Based on these observations, we use Altair to plot the first diagram. We set the election year as the x-axis and the turnout rate as the y-axis, using different colors for each age group. Here is what the first diagram looks like:
+```{python}
+#organzing the data
+long_format = pd.melt(presidential_group, id_vars='YEAR',
+                      value_vars=['Age 18-29', 'Age 30-44', 'Age 45-59', 'Age 60+'],
+                      var_name='Age Group', value_name='Turnout Rate')
+
+#create the line chart
+chart_age = alt.Chart(long_format).mark_line(point=True).encode(
+    x=alt.X('YEAR:O', title='Election Year',axis=alt.Axis(labelAngle=0)),
+    y=alt.Y('Turnout Rate:Q', title='Turnout Rate', axis=alt.Axis(format='%', titleAnchor='middle')),
+    color=alt.Color('Age Group:N', legend=alt.Legend(title="Age Group")),
+    tooltip=[alt.Tooltip('YEAR:O', title='Year'),
+             alt.Tooltip('Turnout Rate:Q', title='Turnout Rate', format='.2%'),
+             alt.Tooltip('Age Group:N', title='Age Group')]
+).properties(
+    title="Voter Turnout by Age Group in Presidential Elections (1988+)",
+    width=400,
+    height=400
+)
+
+#display the chart
+chart_age
+```
+
+Based on the first diagram, we can see that the age group 18-29 has a relatively lower turnout rate than other age groups over the election years. Additionally, the gap in turnout rates decreases as people age. However, the diagram only provides a general picture of how the turnout rate changes over the election years for each age group. Because the gaps in turnout rates are not an intuitive way to show how age affects political participation, we decided to average the turnout rates over the election years and calculate the change in turnout rate between each age group. We can then use these results to plot the diminishing marginal rate of age (the change in turnout rate between each age group). We use Altair to create the diagram, setting age as the x-axis and the change in turnout rate as the y-axis. Here are the following plots:
+```{python}
+#calculate the differences in mean
+mean_turnout = presidential_group[['Age 18-29', 'Age 30-44', 'Age 45-59', 'Age 60+']].mean().reset_index()
+mean_turnout.columns = ['Age Group', 'Average Turnout Rate']
+mean_turnout['Next Turnout Rate'] = mean_turnout['Average Turnout Rate'].shift(-1)
+mean_turnout['Difference'] = mean_turnout['Next Turnout Rate'] - mean_turnout['Average Turnout Rate']  
+mean_turnout['Comparison'] = mean_turnout['Age Group'] + " vs " + mean_turnout['Age Group'].shift(-1)
+comparison_data = mean_turnout[:-1].copy()
+
+
+#create chart for Diminishing Marginal Rate of Age
+base_chart_marginal = alt.Chart(mean_turnout).mark_line(point=True).encode(
+    x=alt.X('Age Group:N', title='Age Group', sort=['Age 18-29', 'Age 30-44', 'Age 45-59', 'Age 60+'], axis=alt.Axis(labelAngle=0)),
+    y=alt.Y('Average Turnout Rate:Q', 
+            title='Average Turnout Rate', 
+            axis=alt.Axis(format='%'),
+            scale=alt.Scale(domain=[0.415, 0.7])  
+           ),
+    tooltip=[
+        alt.Tooltip('Age Group:N', title='Age Group'),
+        alt.Tooltip('Average Turnout Rate:Q', title='Turnout Rate', format='.2%'),
+        alt.Tooltip('Difference:Q', title='Difference to Next', format='.2%')
+    ]
+).properties(
+    title="Diminishing Marginal Rate of Age",
+    width=400,
+    height=400
+)
+
+base_chart_marginal
+```
+
+```{python}
+#create bar chart to show the differences in age group
+bar_chart = alt.Chart(comparison_data).mark_bar().encode(
+    x=alt.X('Comparison:N', title='Age Group Comparison', sort=None, axis=alt.Axis(labelAngle=0)),
+    y=alt.Y('Difference:Q', title='Change in Turnout Rate', axis=alt.Axis(format='%')),
+    tooltip=[
+        alt.Tooltip('Comparison:N', title='Comparison'),
+        alt.Tooltip('Difference:Q', title='Change in Turnout Rate', format='.2%')
+    ]
+).properties(
+    title="Change in Voter Turnout Rate Between Age Groups",
+    width=400,
+    height=300
+)
+bar_chart
+```
+
+Based on the diagrams above, we can intuitively see the change in turnout rate between different age groups. As people getting older, the turnout rate tends to increase, and the differences in turnout rates diminish. Thus, we can confirm that age does have an impact on turnout rates.
+
+
+
+
+
+
+
+
+
+
+
