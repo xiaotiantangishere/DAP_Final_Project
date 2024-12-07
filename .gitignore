@@ -1,0 +1,10 @@
+
+.DS_Store
+shiny/__pycache__/app.cpython-39.pyc
+shiny/__pycache__/app_fancier.cpython-39.pyc
+shiny/__pycache__/app_fancierv2.cpython-39.pyc
+shiny/__pycache__/app_fanciest.cpython-39.pyc
+shiny/__pycache__/app_fancy.cpython-39.pyc
+shiny/app.py
+shiny/app_fancier.py
+shiny/app_fancy.py
