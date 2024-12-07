@@ -4,6 +4,9 @@ import pandas as pd
 import json
 import altair as alt
 import geopandas as gpd
+import os
+
+os.chdir("/Users/tang/Desktop/DAP_Final_Project")
 
 # Import turnout rate data
 df2012 = pd.read_csv('data/df2012_clean.csv')
