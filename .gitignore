@@ -1,4 +1,3 @@
-
 writeup/writeup_files/libs/bootstrap/bootstrap-5bdc1ec511977dd36301403cf8f4f68d.min.css
 writeup/writeup_files/libs/bootstrap/bootstrap-icons.css
 writeup/writeup_files/libs/bootstrap/bootstrap-icons.woff
@@ -11,3 +10,14 @@ writeup/writeup_files/libs/quarto-html/quarto.js
 writeup/writeup_files/libs/quarto-html/tippy.css
 writeup/writeup_files/libs/quarto-html/tippy.umd.min.js
 writeup/writeup.html
+
+.DS_Store
+shiny/__pycache__/app.cpython-39.pyc
+shiny/__pycache__/app_fancier.cpython-39.pyc
+shiny/__pycache__/app_fancierv2.cpython-39.pyc
+shiny/__pycache__/app_fanciest.cpython-39.pyc
+shiny/__pycache__/app_fancy.cpython-39.pyc
+shiny/app.py
+shiny/app_fancier.py
+shiny/app_fancy.py
+

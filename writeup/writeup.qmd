@@ -12,113 +12,248 @@ format:
 engine: jupyter
 ---
 
-```{python}
-%reset -f
-import pandas as pd
-import altair as alt
-import statsmodels.api as sm
-alt.renderers.enable('html')
-import os
 
-#import data
-age_df = pd.read_csv(r'C:\Users\james\Desktop\DAP_Final_Project\data\CPS_Demographic_Turnout_Rates_v1.0.csv')
-
-age_group = age_df[['YEAR', 'CPS_ADJ_AGE1829_RATE', 'CPS_ADJ_AGE3044_RATE', 'CPS_ADJ_AGE4559_RATE', 'CPS_ADJ_AGE60_RATE']].copy()
-age_group_names = {
-    'CPS_ADJ_AGE1829_RATE': 'Age 18-29',
-    'CPS_ADJ_AGE3044_RATE': 'Age 30-44',
-    'CPS_ADJ_AGE4559_RATE': 'Age 45-59',
-    'CPS_ADJ_AGE60_RATE': 'Age 60+'
-}
-age_group.rename(columns=age_group_names, inplace=True)
-
-#only focus on presidential election
-presidential_group = age_group[age_group['YEAR'] >= 1988]
-presidential_group = age_group[age_group['YEAR'] % 4 == 0]
-
-```
 
 This year, 2024, is an election year. We have witnessed a lot of big news: the withdrawal of Joe Biden and Donald Trump's return to the White House. Some states indicate that the turnout rate is lower than the election yeat in 2020. Alabama even declares the lowest turnout rate in over 30 years. These events make us interested in turnout rate. Our research questions are What factors affect turnout rate and how these fatocrs affect turnout rates.
 
-The first factor we think is state.
-(Xiaotian)
 
-The second factor we are interested in is age. We want to analyze how age affects turnout rates. To start, we observe that the data is distributed over the year, with each year having a different turnout rate for various age groups. Based on these observations, we use Altair to plot the first diagram. We set the election year as the x-axis and the turnout rate as the y-axis, using different colors for each age group. Here is what the first diagram looks like:
-```{python}
-#organzing the data
-long_format = pd.melt(presidential_group, id_vars='YEAR',
-                      value_vars=['Age 18-29', 'Age 30-44', 'Age 45-59', 'Age 60+'],
-                      var_name='Age Group', value_name='Turnout Rate')
+The first factor that we are interested in is *State*. We plan to draw a map reflecting turnout rate in the state level. We use the [**State and National Turnout Rates for Presidential Elections**](https://election.lab.ufl.edu/voter-turnout/) data from the University of Florida Election Lab，where it provides statewise presidential elections turnout rate data from 2012 to 2024. The geodata we use is [Census shapefile](https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.2010.html#list-tab-1556094155), specifically the zipfile "gz_2010_us_040_00_500k.zip". In the data cleaning process, we basically compared the 'State' columns in the four turnout rate dataset with the geodata using *set* function, to make sure the data be merged correctly. The app_fanciest.py is the shiny app that we created. Running this file with code *$shiny run --reload shiny/app_fanciest.py* in the terminal will display a shiny app with a drop-down menu selecting years, a check box to decide whether comparing the rate with nation level, and a toggle decide whether to showcase the swing states only. The results demonstrate that the Northern part of the US seems to have higher turnout rates than the Southern part, and the swing states, in most cases, have higher turnout rates than the national average.
 
-#create the line chart
-chart_age = alt.Chart(long_format).mark_line(point=True).encode(
-    x=alt.X('YEAR:O', title='Election Year',axis=alt.Axis(labelAngle=0)),
-    y=alt.Y('Turnout Rate:Q', title='Turnout Rate', axis=alt.Axis(format='%', titleAnchor='middle')),
-    color=alt.Color('Age Group:N', legend=alt.Legend(title="Age Group")),
-    tooltip=[alt.Tooltip('YEAR:O', title='Year'),
-             alt.Tooltip('Turnout Rate:Q', title='Turnout Rate', format='.2%'),
-             alt.Tooltip('Age Group:N', title='Age Group')]
-).properties(
-    title="Voter Turnout by Age Group in Presidential Elections (1988+)",
-    width=400,
-    height=400
-)
-
-#display the chart
-chart_age
-```
-
-Based on the first diagram, we can see that the age group 18-29 has a relatively lower turnout rate than other age groups over the election years. Additionally, the gap in turnout rates decreases as people age. However, the diagram only provides a general picture of how the turnout rate changes over the election years for each age group. Because the gaps in turnout rates are not an intuitive way to show how age affects political participation, we decided to average the turnout rates over the election years and calculate the change in turnout rate between each age group. We can then use these results to plot the diminishing marginal rate of age (the change in turnout rate between each age group). We use Altair to create the diagram, setting age as the x-axis and the change in turnout rate as the y-axis. Here are the following plots:
-```{python}
-#calculate the differences in mean
-mean_turnout = presidential_group[['Age 18-29', 'Age 30-44', 'Age 45-59', 'Age 60+']].mean().reset_index()
-mean_turnout.columns = ['Age Group', 'Average Turnout Rate']
-mean_turnout['Next Turnout Rate'] = mean_turnout['Average Turnout Rate'].shift(-1)
-mean_turnout['Difference'] = mean_turnout['Next Turnout Rate'] - mean_turnout['Average Turnout Rate']  
-mean_turnout['Comparison'] = mean_turnout['Age Group'] + " vs " + mean_turnout['Age Group'].shift(-1)
-comparison_data = mean_turnout[:-1].copy()
-
-
-#create chart for Diminishing Marginal Rate of Age
-base_chart_marginal = alt.Chart(mean_turnout).mark_line(point=True).encode(
-    x=alt.X('Age Group:N', title='Age Group', sort=['Age 18-29', 'Age 30-44', 'Age 45-59', 'Age 60+'], axis=alt.Axis(labelAngle=0)),
-    y=alt.Y('Average Turnout Rate:Q', 
-            title='Average Turnout Rate', 
-            axis=alt.Axis(format='%'),
-            scale=alt.Scale(domain=[0.415, 0.7])  
-           ),
-    tooltip=[
-        alt.Tooltip('Age Group:N', title='Age Group'),
-        alt.Tooltip('Average Turnout Rate:Q', title='Turnout Rate', format='.2%'),
-        alt.Tooltip('Difference:Q', title='Difference to Next', format='.2%')
-    ]
-).properties(
-    title="Diminishing Marginal Rate of Age",
-    width=400,
-    height=400
-)
-
-base_chart_marginal
-```
 
 ```{python}
-#create bar chart to show the differences in age group
-bar_chart = alt.Chart(comparison_data).mark_bar().encode(
-    x=alt.X('Comparison:N', title='Age Group Comparison', sort=None, axis=alt.Axis(labelAngle=0)),
-    y=alt.Y('Difference:Q', title='Change in Turnout Rate', axis=alt.Axis(format='%')),
-    tooltip=[
-        alt.Tooltip('Comparison:N', title='Comparison'),
-        alt.Tooltip('Difference:Q', title='Change in Turnout Rate', format='.2%')
-    ]
-).properties(
-    title="Change in Voter Turnout Rate Between Age Groups",
-    width=400,
-    height=300
-)
-bar_chart
+#|include: false
+import pandas as pd
+import geopandas as gpd
+import altair as alt
+import matplotlib.pyplot as plt
+import os
+os.chdir("/Users/tang/Desktop/DAP_Final_Project")
+
+
 ```
 
-Based on the diagrams above, we can intuitively see the change in turnout rate between different age groups. As people getting older, the turnout rate tends to increase, and the differences in turnout rates diminish. Thus, we can confirm that age does have an impact on turnout rates.
+
+```{python}
+#|include: false
+df2012 = pd.read_csv('data/Turnout_2012G_v1.0.csv')
+df2016 = pd.read_csv("data/Turnout_2016G_v1.0.csv")
+df2020 = pd.read_csv("data/Turnout_2020G_v1.2.csv")
+df2024 = pd.read_csv("data/Turnout_2024G_v0.3.csv")
+geodata = gpd.read_file('data/gz_2010_us_040_00_500k/gz_2010_us_040_00_500k.shp')
+
+geodata_states = set(geodata['NAME'])
+
+### check if the state variable could match.(df2024)
+df2024_states = set(df2024['STATE'])
+common_geo_24= geodata_states & df2024_states
+only_in_geodata = geodata_states - df2024_states
+only_in_df2024 = df2024_states - geodata_states
+print(f"Only in geodata['NAME']: {only_in_geodata}")
+print(f"Only in df2024['STATE']: {only_in_df2024}")
+
+### check if the state variable could match.(df2020)
+df2020_states = set(df2020['STATE'])
+common_geo_20= geodata_states & df2020_states
+only_in_geodata = geodata_states - df2020_states
+only_in_df2020 = df2020_states - geodata_states
+print(f"Only in geodata['NAME']: {only_in_geodata}")
+print(f"Only in df2020['STATE']: {only_in_df2020}")
+
+# adjust Penn in df2020 by removing the astroid
+df2020['STATE'] = df2020['STATE'].str.rstrip('*')
+
+
+### check if the state variable could match.(df2016)
+df2016_states = set(df2016['STATE'])
+common_geo_16= geodata_states & df2016_states
+only_in_geodata = geodata_states - df2016_states
+only_in_df2016 = df2016_states - geodata_states
+print(f"Only in geodata['NAME']: {only_in_geodata}")
+print(f"Only in df2016['STATE']: {only_in_df2016}")
+
+### check if the state variable could match.(df2012)
+df2012_states = set(df2012['STATE'])
+common_geo_12= geodata_states & df2012_states
+only_in_geodata = geodata_states - df2012_states
+only_in_df2012 = df2012_states - geodata_states
+print(f"Only in geodata['NAME']: {only_in_geodata}")
+print(f"Only in df2016['STATE']: {only_in_df2012}")
+
+### define a data cleaning function
+def df_cleaner(df):
+    df_clean = df[['STATE', 'VEP_TURNOUT_RATE']].rename(columns={
+        'STATE': 'NAME',
+        'VEP_TURNOUT_RATE': 'VEP'})
+    df_clean['VEP'] = df_clean['VEP'].str.replace(
+        '%', '', regex=False).astype(float)
+    df_clean['VEP_relative'] = (df_clean['VEP']-df_clean.loc[0,'VEP']).round(2)
+    print(df_clean.loc[0,'VEP'])
+    return df_clean
+
+
+df2012_clean = df_cleaner(df2012)
+df2016_clean = df_cleaner(df2016)
+df2020_clean = df_cleaner(df2020)
+df2024_clean = df_cleaner(df2024)
+
+# export to local directory
+df2012_clean.to_csv('data/df2012_clean.csv', index=False)
+df2016_clean.to_csv('data/df2016_clean.csv', index=False)
+df2020_clean.to_csv('data/df2020_clean.csv', index=False)
+df2024_clean.to_csv('data/df2024_clean.csv', index=False)
+
+```
+
+
+```{python}
+#|include: false
+############
+# the shiny app code is copy pasted here for your information.
+############
+from shiny import App, render, ui, reactive
+from shinywidgets import render_altair, output_widget
+import pandas as pd
+import json
+import altair as alt
+import geopandas as gpd
+
+# Import turnout rate data
+df2012 = pd.read_csv('data/df2012_clean.csv')
+df2016 = pd.read_csv('data/df2016_clean.csv')
+df2020 = pd.read_csv('data/df2020_clean.csv')
+df2024 = pd.read_csv('data/df2024_clean.csv')
+
+# Import geodata
+geodata = gpd.read_file('data/gz_2010_us_040_00_500k/gz_2010_us_040_00_500k.shp')
+
+# Define swing states for each year
+swing_states = {
+    "2012": ["Florida", "Ohio", "Virginia", "Colorado", "Iowa", "New Hampshire", "Nevada", "North Carolina"],
+    "2016": ["Florida", "Ohio", "Pennsylvania", "Michigan", "Wisconsin", "North Carolina", "Arizona", "Nevada"],
+    "2020": ["Arizona", "Georgia", "Michigan", "Nevada", "North Carolina", "Pennsylvania", "Wisconsin"],
+    "2024": ["Arizona", "Georgia", "Michigan", "Nevada", "North Carolina", "Pennsylvania", "Wisconsin"]
+}
+
+### UI
+app_ui = ui.page_fluid(
+    ui.h2("VEP Turnout Rate by State"),
+    ui.layout_columns(
+        ui.card(
+            ui.card_header("Turnout Rate Map"),
+            ui.input_select(
+                id="year_select",
+                label="Select Year:",
+                choices=["2012", "2016", "2020", "2024"],  
+                selected="2012"
+            ),
+            ui.input_checkbox(
+                id="toggle_relative",  # checkbox switch
+                label="Show Relative Values", 
+                value=True  # Default to relative values
+            ),
+            ui.input_switch(
+                id="toggle_swing",  # Toggle switch for swing states
+                label="Show Only Swing States", 
+                value=False  # Default to showing all states
+            ),
+            output_widget("state_map"),
+            full_screen=True
+        ),
+        ui.card(
+            ui.card_header("Selected Data"),
+            ui.output_data_frame("data_table"),  # Use output_data_frame for rendering the table
+            full_screen=True
+        )
+    )
+)
+
+### SERVER
+def server(input, output, session):
+    @reactive.Calc
+    def selected_year_data():
+        year = input.year_select()
+        if year == "2012":
+            return df2012
+        elif year == "2016":
+            return df2016
+        elif year == "2020":
+            return df2020
+        elif year == "2024":
+            return df2024
+
+    @reactive.Calc
+    def is_relative():
+        return input.toggle_relative()
+
+    @reactive.Calc
+    def filtered_data():
+        # Get the selected year and whether to show only swing states
+        year = input.year_select()
+        year_data = selected_year_data()
+        is_swing_only = input.toggle_swing()
+
+        # Merge geodata and year data
+        merged = geodata.merge(year_data, on="NAME", how="left")
+
+        # Filter to show only swing states if toggle is active
+        if is_swing_only:
+            swing_state_list = swing_states[year]
+            merged = merged[merged["NAME"].isin(swing_state_list)]
+
+        return merged
+
+    @output
+    @render_altair
+    def state_map():
+        # Get filtered data
+        merged = filtered_data()
+
+        # Convert merged GeoDataFrame to GeoJSON
+        merged_json = json.loads(merged.to_json())
+
+        # Determine which column to use for the map
+        column_to_use = "VEP_relative" if is_relative() else "VEP"
+        color_scale = (
+            alt.Scale(domain=[-20, 0, 20], range=["blue", "white", "red"])
+            if is_relative()
+            else alt.Scale(domain=[40, 80], scheme="blues")
+        )
+        color_title = "Relative Turnout Rate (%)" if is_relative() else "Turnout Rate (%)"
+
+        # Draw Altair map
+        chart = alt.Chart(alt.Data(values=merged_json['features'])).mark_geoshape().encode(
+            color=alt.Color(
+                f'properties.{column_to_use}:Q',
+                scale=color_scale,
+                title=color_title
+            ),
+            tooltip=[
+                alt.Tooltip('properties.NAME:N', title='State'),
+                alt.Tooltip(f'properties.{column_to_use}:Q', title=color_title)
+            ]
+        ).properties(
+            title=f"VEP Turnout Rate by State in {input.year_select()}",
+            width=600,
+            height=400
+        ).project('albersUsa')
+
+        return chart
+
+    @output
+    @render.data_frame
+    def data_table():
+        # Get the data for the selected year
+        year_data = selected_year_data()
+
+        # Return the filtered DataFrame
+        return year_data
+
+app = App(app_ui, server)
+
+```
+
+
+
 
 The third factor we are interested in is education. In this part, we are looking for the connection between the education level and the turnout rates. As a result, we have four education levels: post-college graduate, some or college graduate, high school graduate, and no high school. After that, we collect the data from the Election Lab at the University of Florida. The data are reweighted by the author using a procedure proposed by Hur and Achen. We filter the data and have a new data set of turnout rates by different eduation level. Finally, we draw the line chart with four different colors to present the change in turnout rates by education level from 1988 to 2020.
 
@@ -172,6 +307,22 @@ However, there are some limitations in the project. The first one is the omitted
 In order to study this topic in greater depth, the future direction should concentrate on exploring additional variables, using advanced modeling techniques, and expanding outcome measures about political participation. Additional variables would help to address the problem of biased outcome. The advanced modeling techniques, such as nonlinear regression, would show the correlation between these fators and turnout rates. Finally, turnout rates cannot be 100 percent to represent political participation, so the consideration of other measurements is also significant.
 
 In conclusion, we believe that states, age, and education level are three factors affect the turnout rates. Although there are some limitations in the project, our project deserves a further research and more concentration.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
